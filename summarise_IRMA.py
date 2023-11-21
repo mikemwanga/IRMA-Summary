@@ -1,4 +1,13 @@
 #!/bin/python3
+
+'''
+SCRIPT TO SUMMARISE IRMA ASSEMBLER OUTPUT.
+REQUIRES INSTALLATION OF THE BELOW LIBRARIES IN CONDA ENVIROMENT
+RUN THE SCRIPT IN DIRECTORY WHERE IRMA OUTPUTS ARE LOCATED
+
+USAGE python3 summarise_IRMA.py
+
+'''
 import pandas as pd
 import os
 import plotly.express as px
@@ -48,7 +57,7 @@ df_coverage = dataframe[dataframe.columns.difference(['seq_len'])]
 df_lenth= df_lenth.pivot(index='sample',columns='Gene',values='seq_len').reset_index()
 columns = ['HA','NA','MP','PB1','PB2','NP','NS','PA']
 df_lenth = df_lenth[['sample'] + columns]
-length_counts = {'HA':1701,'NA':1410,'MP':982,'PB1':2274,'PB2':2280,'NP':1497,'NS':838,'PA':2151}
+length_counts = {'HA':1701,'NA':1416,'MP':982,'PB1':2274,'PB2':2280,'NP':1497,'NS':838,'PA':2151}
 for col in columns:
     df_lenth[col] = round(100*df_lenth[col]/length_counts[col],1)
 df_lenth.set_index('sample', inplace=True)
@@ -80,13 +89,24 @@ def plot_coverage(data, header):
     return fig
 
 
+def plot_coverage_length(data, header):
+    '''Function to plot coverage figure'''
+    fig = px.imshow(data,text_auto=True,aspect='auto',color_continuous_scale='OrRd', zmin=0, zmax=100)
+    fig.update_layout(margin = margin,title = header)
+    fig.update_yaxes(tickfont=dict(size=10), title = None, linecolor='gray')
+    fig.update_xaxes(title = None, linecolor='gray')
+    return fig
+
+
 depth_coverage_plot = plot_coverage(df_coverage, 'Read Coverage - Absolute Counts' )
-depth_coverage_plot.write_image('IRMA_Summary/coverage_depth_absolute_counts.pdf')
+# depth_coverage_plot.write_image('IRMA_Summary/coverage_depth_absolute_counts.pdf')
+depth_coverage_plot.write_image('IRMA_Summary/coverage_depth_absolute_counts.png')
 
 depth_coverage_plot = plot_coverage(df_coverage_log, 'Read Coverage - Log Counts' )
-depth_coverage_plot.write_image('IRMA_Summary/coverage_depth_log_counts.pdf')
+# depth_coverage_plot.write_image('IRMA_Summary/coverage_depth_log_counts.pdf')
+depth_coverage_plot.write_image('IRMA_Summary/coverage_depth_log_counts.png')
 
 
-depth_length_plot = plot_coverage(df_lenth, 'Coverage - Length')
-depth_length_plot.write_image('IRMA_Summary/coverage_length_plot.pdf')
-
+depth_length_plot = plot_coverage_length(df_lenth, 'Coverage - Length')
+# depth_length_plot.write_image('IRMA_Summary/coverage_length_plot.pdf')
+depth_length_plot.write_image('IRMA_Summary/coverage_length_plot.png')
