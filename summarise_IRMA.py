@@ -9,8 +9,8 @@ USAGE python3 summarise_IRMA.py
 
 '''
 import pandas as pd
-import os
-import glob
+import os,sys, argparse
+# import glob
 import plotly.express as px
 import plotly.io as pio
 import kaleido
@@ -18,19 +18,19 @@ import numpy as np
 import math
 import fnmatch
 from pathlib import Path
-import re
+# import re
 import shutil
-
 pio.kaleido.scope.mathjax = None
-
 margin=dict(l=5, r=5, t=50, b=5) 
 from datetime import datetime, date 
-
 today = datetime.today().strftime('%Y-%m-%d')
 time = datetime.today().strftime('%H-%M-%S')
 time = today+'_' + time
 
+
+# CURRDIR=sys.argv[1]
 CURRDIR=os.getcwd()
+
 
 #DECLARING SOME FUNCTIONS
 def plot_sample_coverage(data):
@@ -57,6 +57,7 @@ else:
     print('Generate summary plots')
 
 ref_folder_path = os.path.join(CURRDIR,dirname,reference_folder)
+irma_dir = os.path.join(CURRDIR,dirname)
 
 #GET DIRECTORIES WITH COVERAGE DATA
 selected_folder = []
@@ -126,32 +127,27 @@ for folder in selected_folder:
                     seq_data_frame.append({'Reference_Name':gene_name, 'Position':pos,'Nucleotide':nt})
             ref_data = pd.DataFrame(seq_data_frame)
             ref_data.to_csv(f'{tmp_folder}/{gene_name}.ref.txt',sep='\t',index=False)
-    
-    #process fasta files
-    
     seqfiles = [seq_file for seq_file in os.listdir(path) if seq_file.endswith('.fasta')]
-    print(seqfiles)
 
     merged_coverage_data = []
     for gene_segment in genenames:
         genefile = os.path.join(tmp_folder,f'{gene_segment}.ref.txt')
         reference_data = pd.read_table(genefile, keep_default_na=False)
         genefile = os.path.join(tmp_folder,f'{gene_segment}.cov.txt')
+        # print(pd.read_table(genefile))
         coverage_data = pd.read_table(genefile, usecols=['Position','Coverage Depth'],keep_default_na=False)
+        coverage_data['sample_name'] = folder
+        # print(coverage_data)
         read_cov = pd.merge(reference_data, coverage_data, on='Position', how='left')
         read_cov['Coverage Depth'].fillna(0,inplace=True)
         merged_coverage_data.append(read_cov)
 
     merged_coverage_data = pd.concat(merged_coverage_data)
+    # print(merged_coverage_data)
     coverage_plot = plot_sample_coverage(merged_coverage_data)
-    # titlenames = {'Pig':f'Pig(n={npig})','Human':f'Human(n={nhuman})','Horse':f'Horse(n={nhorse})','Avian':f'Avian(n={navian})'}
-    # for i,(key,value) in enumerate(title.items()):
-    #     coverage_plot.layout.annotations[i]['text'] = value
-
     coverage_plot.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1]))
     coverage_plot.write_image(f'{ref_folder_path}/{folder}-read-coverage-ref.pdf')
-
-    # Path.rmdir(os.path.join(CURRDIR,folder,'tmp'))
+    merged_coverage_data.to_csv(f'{ref_folder_path}/{folder}-read-coverage-table.tsv',index=False,sep='\t')
 
     # reference_lengths = {} #create dictionary to HOLD GENE NAME AND LENGTH
     seq_data_frame = []
@@ -211,20 +207,23 @@ gene_coverage = dataframe[dataframe.columns.difference(['seq_len'])]
 gene_lenth= gene_lenth.pivot(index='sample',columns='Gene',values='seq_len').reset_index()
 # print(gene_lenth)
 geneids = ['PB1','PB2','PA','HA','NP','NA','MP','NS']
-columns = [col for col in geneids if col in gene_lenth.columns  ]
-# columns = ['PB1','PB2','PA','HA','NP','NA','MP','NS']
+columns = [col for col in geneids if col in gene_lenth.columns]
 gene_lenth = gene_lenth[['sample'] + columns]
+
+
 for name in gene_lenth['sample']:
-    gene_lenth['sample_id'] = [name.split('_')[0] for name in gene_lenth['sample']]
+    gene_lenth['sample_id'] = [name.split('_H')[0] for name in gene_lenth['sample']]
 #Export raw length data
-gene_lenth.to_csv(f'{dirname}/gene_absolute_length_coverage_data.tsv', sep="\t", index=True)
+gene_lenth.to_csv(f'{irma_dir}/gene_absolute_length_coverage_data.tsv', sep="\t", index=True)
 
 ##**************************************************************************************************
 # length_counts = {'HA':1701,'NA':1416,'MP':982,'PB1':2276,'PB2':2280,'NP':1497,'NS':838,'PA':2151} #PB1 initially et at 2274 but should be 2276
 gene_lenth = gene_lenth.set_index('sample_id')
+
+# print(gene_lenth)
 reference_lengths_gene = dict()
 for sample_name in gene_lenth['sample']:
-    foldername = sample_name.split('_')[0]
+    foldername = sample_name.split('_H')[0]
     reference_path = Path(os.path.join(CURRDIR,foldername))/'intermediate/0-ITERATIVE-REFERENCES'
     reference_files = reference_path.glob('R0-*.ref')
     reference_lengths = {} #create dictionary to HOLD GENE NAME AND LENGTH
@@ -236,8 +235,10 @@ for sample_name in gene_lenth['sample']:
             reference_lengths[gene_name] = sequence_length
     reference_lengths_gene[foldername]=reference_lengths
 reference_lengths = pd.DataFrame(reference_lengths_gene).T
+# print(reference_lengths)
 
 for col in columns:
+    # if col in gene_lenth.columns:
     gene_lenth[col] = round(gene_lenth[col]/reference_lengths[col] *100,1)
 gene_lenth.reset_index(inplace=True)
 
@@ -248,7 +249,7 @@ for sample in gene_lenth['sample']:
     stype = sample.split('_')[1]
     type_dict.append({'SampleID':sampleid,'Subtype':stype})
 
-pd.DataFrame(type_dict).to_csv(f'{dirname}/influenza_subtypes.tsv', sep="\t", index=True)
+pd.DataFrame(type_dict).to_csv(f'{irma_dir}/influenza_subtypes.tsv', sep="\t", index=True)
 
 gene_lenth=gene_lenth[['sample']+ columns].set_index('sample') #WHAT IF SOME OF THE SEGMENTS ARE MISSING. NEED TO CONDITION THIS
 
@@ -260,10 +261,10 @@ df_coverage = df_coverage[columns] #['PB1','PB2','PA','HA','NP','NA','MP','NS']]
 df_coverage_log = round(np.log10(df_coverage[df_coverage.columns]+1), 1)
 #EXPORT THE DATAFRAME
 print('Output data to files')
-df_coverage.to_csv(f'{dirname}/depth_coverage_data.tsv', sep="\t", index=True)
-df_coverage_log.to_csv(f'{dirname}/depth_coverage_data_log_10.tsv', sep="\t", index=True)
-gene_lenth.to_csv(f'{dirname}/gene-percentage-length-coverage-data.tsv', sep="\t", index=True)
-readsdata.to_csv(f'{dirname}/assembled-reads-data.tsv', sep="\t", index=True)
+df_coverage.to_csv(f'{irma_dir}/depth_coverage_data.tsv', sep="\t", index=True)
+df_coverage_log.to_csv(f'{irma_dir}/depth_coverage_data_log_10.tsv', sep="\t", index=True)
+gene_lenth.to_csv(f'{irma_dir}/gene-percentage-length-coverage-data.tsv', sep="\t", index=True)
+readsdata.to_csv(f'{irma_dir}/assembled-reads-data.tsv', sep="\t", index=True)
 
 #PLOT FUNCTIONS
 def plot_coverage_depth(data, header,bartitle,max_value):
@@ -282,7 +283,6 @@ def plot_coverage_depth(data, header,bartitle,max_value):
     return fig
 
 print('Plotting figures for coverage by depth')
-# plot_figures_absolute(df_coverage)
 
 def plot_figures_log(data):
     max_value = data.max(numeric_only=True).max()
@@ -294,10 +294,9 @@ def plot_figures_log(data):
         subset_df = data.iloc[start:stop, :]
         name =f'Subset_{i+1}'
         fig = plot_coverage_depth(subset_df, f'Read Coverage - Log Counts_{name}','Log10', max_value)
-        fig.write_image(f'{dirname}/coverage-depth-log-counts-{name}.pdf')
+        fig.write_image(f'{irma_dir}/coverage-depth-log-counts-{name}.pdf')
 
-print('Plotting figures for coverage by depth logwise')
-plot_figures_log(df_coverage_log)
+
 
 
 def plot_figures_length(data):
@@ -310,10 +309,9 @@ def plot_figures_length(data):
         subset_df = data.iloc[start:stop, :]
         name =f'Subset-{i+1}'
         fig = plot_coverage_depth(subset_df, f'Gene Coverage - Length_{name}','Coverage (%)',max_value )
-        fig.write_image(f'{dirname}/coverage_length_{name}.pdf')
+        fig.write_image(f'{irma_dir}/coverage_length_{name}.pdf')
 
-print('Plotting figures for coverage by gene length')
-plot_figures_length(gene_lenth)
+
 #**************************************************************************************************************
 #Plot total reads and assembled 
 def plot_bar(data,header):
@@ -339,8 +337,13 @@ def plot_assembled_reads(data):
         subset_df = data.iloc[start:stop, :]
         name =f'Subset-{i+1}'
         fig = plot_bar(subset_df, f'{name}_total-reads_vs_%-assembled' )
-        fig.write_image(f'{dirname}/assembled_reads_{name}.pdf')
+        fig.write_image(f'{irma_dir}/assembled_reads_{name}.pdf')
 
+print('Plotting figures for coverage by depth logwise')
+plot_figures_log(df_coverage_log)
+print('Plotting figures for coverage by gene length')
+plot_figures_length(gene_lenth)
+print('Generate Read Data')
 plot_assembled_reads(readsdata)
 
 print('Voila!')
