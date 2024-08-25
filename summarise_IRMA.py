@@ -8,6 +8,8 @@ RUN THE SCRIPT IN DIRECTORY WHERE IRMA OUTPUTS ARE LOCATED
 USAGE python3 summarise_IRMA.py
 
 '''
+import warnings
+warnings.filterwarnings("ignore")
 import pandas as pd
 import os,sys, argparse
 # import glob
@@ -28,8 +30,8 @@ time = datetime.today().strftime('%H-%M-%S')
 time = today+'_' + time
 
 
-# CURRDIR=sys.argv[1]
-CURRDIR=os.getcwd()
+CURRDIR=sys.argv[1]
+# CURRDIR=os.getcwd()
 
 
 #DECLARING SOME FUNCTIONS
@@ -270,7 +272,7 @@ readsdata.to_csv(f'{irma_dir}/assembled-reads-data.tsv', sep="\t", index=True)
 def plot_coverage_depth(data, header,bartitle,max_value):
     '''Function to plot coverage by depth'''
     fig = px.imshow(data,text_auto=True,aspect='auto',color_continuous_scale='OrRd',zmin=0, zmax=max_value)
-    fig.update_layout(margin = margin,title = header,
+    fig.update_layout(margin = margin,title = header,font_color=font_color,
                       plot_bgcolor = "white",
                       coloraxis_colorbar=dict(title=bartitle,orientation='v',#y=-0.3,
                                               titlefont=dict(size=10),
@@ -282,8 +284,11 @@ def plot_coverage_depth(data, header,bartitle,max_value):
     fig.update_traces(ygap=0.5,xgap=0.5)
     return fig
 
+
+#*************************************
 print('Plotting figures for coverage by depth')
 
+font_color='black'
 def plot_figures_log(data):
     max_value = data.max(numeric_only=True).max()
     binsize=20
@@ -317,7 +322,7 @@ def plot_figures_length(data):
 def plot_bar(data,header):
     '''Function to plot reads assembled relative to total number of reads'''
     fig = px.bar(data, y='index',x = 'assembled(%)', text="total_reads", range_x=(0,100))
-    fig.update_layout(margin = margin,title = header,plot_bgcolor = "white")
+    fig.update_layout(margin = margin,title = header,plot_bgcolor = "white", font_color=font_color)
     fig.update_yaxes(titlefont=dict(size=14),tickfont=dict(size=14),tickcolor='black',title=None,
                      linecolor='black',showticklabels=True,ticks='outside')
     fig.update_xaxes(linecolor='black',titlefont=dict(size=14),tickfont=dict(size=14),tickcolor='black',
