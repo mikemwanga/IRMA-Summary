@@ -6,10 +6,12 @@ import plotly.graph_objects as go
 
 grid_color = '#ddd9d9'
 width = 3
+
+
 # Predefined order of gene names
 gene_order = ['PB2', 'PB1', 'PA', 'HA', 'NP', 'NA', 'MP','NS']
 #FUNCTION TO PLOT COVERAGE PLOTS
-def plot_line_coverage_depth(file_data,irma_dir): #file_data is a dictionary where key is foldername, for the data.
+def plot_line_coverage_depth(file_data,irma_dir, reference_folder): #file_data is a dictionary where key is foldername, for the data.
     for foldername, cov_data in file_data.items(): #every folder data frame
         print(f'processing {foldername}')
         positions = []
@@ -51,7 +53,7 @@ def plot_line_coverage_depth(file_data,irma_dir): #file_data is a dictionary whe
                 )
             
 
-        fig.write_image(f'{irma_dir}/newplots_{foldername}.pdf')
+        fig.write_image(f'{irma_dir}/{reference_folder}/{foldername}_depth.pdf')
         print(f'Completed processing {foldername}')
     #return fig
         
