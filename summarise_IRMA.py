@@ -48,7 +48,7 @@ def plot_sample_coverage(data):
 
 #CREATE OUTPUT DIRECTORY
 dir_name = 'IRMA_Summary'
-reference_folder='Reference_Mapping'
+reference_folder='Read_Depth_Plot'
 dirname = dir_name +'_'+ time
 if not os.path.exists(os.path.join(CURRDIR,dirname)):
     print('Directory creating')
@@ -72,12 +72,19 @@ for folder in os.listdir(CURRDIR):
             if table_files:
                 selected_folder.append(folder)
 
+
 #------------------------------------------------------------------------------------------
 #GET AVERAGE READ DEPTH FOR EACH GENE SEGMENT BY SUMMING THE COVERAGE AND DEVIDE BY GENE LENGTH.
 #CREATE A DATA FRAME WITH SAMPLE NAME, GENE NAME AND AVERAGE COVERAGE
 datalist = []
 readsdf = []
 
+
+file_data = {} #COLLECT COVERAGE DATA, GENENAME AND COLOR FOR COVERAGE PLOT
+# color_map = {
+#                 'HA': 'blue','NA': '#075d1c','MP': 'black','PA': '#ff21b2','PB2': '#5a189a','PB1': '#9e5231',
+#                 'NP': 'red','NS': '#339dff',
+#             }
 print('Get Subtype gene segment lengthe and average coverage')
 
 for folder in selected_folder:
@@ -94,6 +101,8 @@ for folder in selected_folder:
     coverage_files = coverage_path.glob('*coverage.txt')
     #create temp folder
 
+    # print(file for file in coverage_files)
+
     if os.path.exists(os.path.join(CURRDIR,folder,'tmp')):
         shutil.rmtree(os.path.join(CURRDIR,folder,'tmp'))
         os.mkdir(os.path.join(CURRDIR,folder,'tmp'))
@@ -105,6 +114,7 @@ for folder in selected_folder:
     genenames = []
     for filename in coverage_files:
         shutil.copy(filename, tmp_folder)
+        # print(filename)
     for file in reference_files:
         shutil.copy(file, tmp_folder)
 
@@ -114,6 +124,8 @@ for folder in selected_folder:
             genename = name.split('_')[1]
             genenames.append(genename)
             cov_data = pd.read_table(os.path.join(tmp_folder,coverage_file))[['Reference_Name','Position','Coverage Depth']]
+
+            # print(cov_data)
             cov_data['Reference_Name'] = cov_data['Reference_Name'].apply(lambda name:name.split('_')[1])
             cov_data.to_csv(f'{tmp_folder}/{genename}.cov.txt',sep='\t',index=False)
 
@@ -170,9 +182,11 @@ for folder in selected_folder:
 
     #EXTRACT COVERAGE INFORMATION FOR EACH GENE SEGMENT********************************************
     # table_path = os.path.join(CURRDIR, folder, 'tables') #GET PATH FOR THE COVERAGE DATAFRAME THE FOLDERS
-    # print(table_path)
+    # print(folder)
+    gene_cov_data_file=[]
     for file in os.listdir(table_path):
         # print(file)
+        # 
         if file.endswith('coverage.txt'):
             data = pd.read_table(os.path.join(table_path,file))
             genelength = len(data) #SEQUENCE LENGTH IS RELATIVE TO DATA LENGTH
@@ -181,6 +195,16 @@ for folder in selected_folder:
             meanv= round(data['Coverage Depth'].mean(),1)
             df = {'sample':folder+'_' + subtype, 'Gene':genename,'seq_len':genelength,'coverage':meanv}
             datalist.append(df)
+            #pass this to a file data and call a separate function to do the new plot type
+            gene_name = file.split('_')[1].split('-')[0]
+            color = color_map.get(gene_name, 'gray') 
+            gene_cov_data_file.append((data[['Reference_Name','Position','Coverage Depth']], gene_name,color)) #>>>>>> UPDATED ON 1-09-2024
+    # print(gene_cov_data_file)
+    file_data[folder] = gene_cov_data_file
+
+
+
+
 
 
     #**********************************************************************************************
@@ -200,6 +224,7 @@ readsdata['assembled(%)'] = round(readsdata['match']/readsdata['initial']*100,1)
 readsdata.rename(columns = {'initial':'total_reads','match':'total_assembled'},inplace=True)
 readsdata.reset_index(inplace=True)
 
+
 #-----------------------------------------------------------------------------------------------------------------
 #FUNCTION TO PLOT HEATMAP TO DEPTH
 
@@ -208,7 +233,7 @@ gene_lenth = dataframe[dataframe.columns.difference(['coverage'])]
 gene_coverage = dataframe[dataframe.columns.difference(['seq_len'])]
 gene_lenth= gene_lenth.pivot(index='sample',columns='Gene',values='seq_len').reset_index()
 # print(gene_lenth)
-geneids = ['PB1','PB2','PA','HA','NP','NA','MP','NS']
+geneids = ['PB2','PB1','PA','HA','NP','NA','MP','NS']
 columns = [col for col in geneids if col in gene_lenth.columns]
 gene_lenth = gene_lenth[['sample'] + columns]
 
@@ -256,6 +281,17 @@ pd.DataFrame(type_dict).to_csv(f'{irma_dir}/influenza_subtypes.tsv', sep="\t", i
 gene_lenth=gene_lenth[['sample']+ columns].set_index('sample') #WHAT IF SOME OF THE SEGMENTS ARE MISSING. NEED TO CONDITION THIS
 
 ##**************************************************************************************************
+#NEW PRINT FOR FILE DATA. CONSIDER RE-EDITING THE CODES
+
+
+
+from line_plots import plot_line_coverage_depth
+# print(file_data)
+plot_line_coverage_depth(file_data,irma_dir)
+# figg.show()
+
+
+##**************************************************************************************************
 #GENERATE DATA FOR COVERAGE BY DEPTH
 df_coverage = gene_coverage.pivot(index='sample',columns='Gene',values='coverage').reset_index()
 df_coverage = df_coverage.set_index('sample')
@@ -269,17 +305,19 @@ gene_lenth.to_csv(f'{irma_dir}/gene-percentage-length-coverage-data.tsv', sep="\
 readsdata.to_csv(f'{irma_dir}/assembled-reads-data.tsv', sep="\t", index=True)
 
 #PLOT FUNCTIONS
-def plot_coverage_depth(data, header,bartitle,max_value):
+'GnBu','OrRd'
+font_color='black'
+def plot_coverage_depth(data, header,bartitle,max_value,color_scale):
     '''Function to plot coverage by depth'''
-    fig = px.imshow(data,text_auto=True,aspect='auto',color_continuous_scale='OrRd',zmin=0, zmax=max_value)
+    fig = px.imshow(data,text_auto=True,aspect='auto',color_continuous_scale=color_scale,zmin=0, zmax=max_value)
     fig.update_layout(margin = margin,title = header,font_color=font_color,
-                      plot_bgcolor = "white",
-                      coloraxis_colorbar=dict(title=bartitle,orientation='v',#y=-0.3,
-                                              titlefont=dict(size=10),
+                      plot_bgcolor = "white",#height=300,
+                      coloraxis_colorbar=dict(title=bartitle,orientation='h',#y=-0.3,
+                                              titlefont=dict(size=12),
                                               titleside='top',thickness=13))
-    fig.update_yaxes(tickfont=dict(size=10), title = None, linecolor='black',
+    fig.update_yaxes(tickfont=dict(size=14), title = None, linecolor='black',
                      showticklabels=True,ticks='outside',tickcolor='black')
-    fig.update_xaxes(title = 'Gene_Name (Ordered from longest to shortest)', linecolor='black',
+    fig.update_xaxes(tickfont=dict(size=14),title = 'Gene_Name (Ordered from longest to shortest)', linecolor='black',
                      showticklabels=True,ticks='outside',tickcolor='black')
     fig.update_traces(ygap=0.5,xgap=0.5)
     return fig
@@ -288,7 +326,6 @@ def plot_coverage_depth(data, header,bartitle,max_value):
 #*************************************
 print('Plotting figures for coverage by depth')
 
-font_color='black'
 def plot_figures_log(data):
     max_value = data.max(numeric_only=True).max()
     binsize=20
@@ -298,11 +335,8 @@ def plot_figures_log(data):
         stop = min((i + 1) * binsize,len(data))
         subset_df = data.iloc[start:stop, :]
         name =f'Subset_{i+1}'
-        fig = plot_coverage_depth(subset_df, f'Read Coverage - Log Counts_{name}','Log10', max_value)
+        fig = plot_coverage_depth(subset_df, f'Read Coverage - Log Counts_{name}','Log10', max_value,'OrRd')
         fig.write_image(f'{irma_dir}/coverage-depth-log-counts-{name}.pdf')
-
-
-
 
 def plot_figures_length(data):
     max_value = data.max(numeric_only=True).max()
@@ -313,7 +347,7 @@ def plot_figures_length(data):
         stop = min((i + 1) * binsize,len(data))
         subset_df = data.iloc[start:stop, :]
         name =f'Subset-{i+1}'
-        fig = plot_coverage_depth(subset_df, f'Gene Coverage - Length_{name}','Coverage (%)',max_value )
+        fig = plot_coverage_depth(subset_df, f'Gene Coverage - Length_{name}','Coverage (%)',max_value,'GnBu' )
         fig.write_image(f'{irma_dir}/coverage_length_{name}.pdf')
 
 
