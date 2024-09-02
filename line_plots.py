@@ -23,7 +23,7 @@ def plot_line_coverage_depth(file_data,irma_dir, reference_folder): #file_data i
             df['Position'] += max_x_position
 
             fig.add_trace(go.Scatter(
-                x=df.Position, y=df['Coverage Depth'], name=name,
+                x=df.Position, y=df['Coverage Depth'], name=name,fill = 'tozeroy',
                 line=dict(color=color, width=width), mode='lines+text') )
             positions.append(max_x_position)
             # # Update the maximum x position for the next file

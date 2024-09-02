@@ -203,11 +203,6 @@ for folder in selected_folder:
     # print(gene_cov_data_file)
     file_data[folder] = gene_cov_data_file
 
-
-
-
-
-
     #**********************************************************************************************
     #GET SUMMARY OF READS FROM READS_COUNT.xt
     reads_data = pd.read_table(table_path + '/READ_COUNTS.txt')
