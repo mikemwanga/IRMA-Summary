@@ -27,15 +27,16 @@ def plot_line_coverage_depth(file_data,irma_dir, reference_folder): #file_data i
                 line=dict(color=color, width=width), mode='lines+text') )
             positions.append(max_x_position)
             # # Update the maximum x position for the next file
-            max_x_position = df['Position'].max() + 1  # Add a small gap for separation
-
-            fig.update_layout(
+            max_x_position = df['Position'].max() + 1 # Add a small gap for separation
+            #print([(positions[i] + positions[i+1]) / 2 for i in range(len(positions) - 1)] + [positions[-1]])
+            fig.update_layout(showlegend=False,
                 title = dict(text = f'{foldername} Coverage',x=0.5,xanchor='center', font=dict(family='Arial Black')),
 
                 plot_bgcolor='white',height=600,width=1400,font=dict(size=20, color='black'),
-                legend=dict(x=1, y=1, bordercolor='black', borderwidth=1, font=dict(size=18)),
-                xaxis=dict(
-                    tickvals=[(positions[i] + positions[i+1]) / 2 for i in range(len(positions) - 1)] + [positions[-1]],
+                #legend=dict(x=1, y=1, bordercolor='black', borderwidth=1, font=dict(size=18)),
+                legend = None,
+                xaxis=dict(#tickmode='linear',
+                    tickvals=[(positions[i] + positions[i+1])/2 for i in range(len(positions) - 1)] + [positions[-1]],
                     ticktext=[name for _, name, _ in cov_data]
             ))
 
