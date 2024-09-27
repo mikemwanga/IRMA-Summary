@@ -29,22 +29,7 @@ today = datetime.today().strftime('%Y-%m-%d')
 time = datetime.today().strftime('%H-%M-%S')
 time = today+'_' + time
 
-
 CURRDIR=sys.argv[1]
-# CURRDIR=os.getcwd()
-
-
-#DECLARING SOME FUNCTIONS
-# def plot_sample_coverage(data):
-#     maxvalue = data['Coverage Depth'].max(numeric_only=True).max()
-#     '''Plots gene segment coverage based on primary reference used'''
-#     fig = px.line(data,x='Position',y='Coverage Depth',facet_col="Reference_Name",facet_col_wrap=4,
-#                 facet_row_spacing = 0.2, facet_col_spacing = 0.05,
-#                 range_y=(0,maxvalue ))
-#     fig.update_yaxes(matches=None, showticklabels=True,title=None)
-#     fig.update_xaxes(matches=None, showticklabels=True)
-#     fig.update_layout(margin=margin)
-#     return fig
 
 #CREATE OUTPUT DIRECTORY
 dir_name = 'IRMA_Summary'
@@ -162,7 +147,7 @@ for folder in selected_folder:
     # coverage_plot = plot_sample_coverage(merged_coverage_data)
     # coverage_plot.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1]))
     # coverage_plot.write_image(f'{ref_folder_path}/{folder}-read-coverage-ref.pdf')
-    # merged_coverage_data.to_csv(f'{ref_folder_path}/{folder}-read-coverage-table.tsv',index=False,sep='\t')
+    merged_coverage_data.to_csv(f'{ref_folder_path}/{folder}-read-coverage-table.tsv',index=False,sep='\t')
 
     # reference_lengths = {} #create dictionary to HOLD GENE NAME AND LENGTH
     seq_data_frame = []
@@ -237,7 +222,7 @@ gene_lenth = gene_lenth[['sample'] + columns]
 for name in gene_lenth['sample']:
     gene_lenth['sample_id'] = [name.split('_H')[0] for name in gene_lenth['sample']]
 #Export raw length data
-# gene_lenth.to_csv(f'{irma_dir}/gene_absolute_length_coverage_data.tsv', sep="\t", index=True)
+gene_lenth.to_csv(f'{irma_dir}/gene_absolute_length_coverage_data.tsv', sep="\t", index=True)
 
 ##**************************************************************************************************
 # length_counts = {'HA':1701,'NA':1416,'MP':982,'PB1':2276,'PB2':2280,'NP':1497,'NS':838,'PA':2151} #PB1 initially et at 2274 but should be 2276
@@ -293,10 +278,10 @@ df_coverage = df_coverage[columns] #['PB1','PB2','PA','HA','NP','NA','MP','NS']]
 df_coverage_log = round(np.log10(df_coverage[df_coverage.columns]+1), 1)
 #EXPORT THE DATAFRAME
 print('Output data to files')
-# df_coverage.to_csv(f'{irma_dir}/depth_coverage_data.tsv', sep="\t", index=True)
-# df_coverage_log.to_csv(f'{irma_dir}/depth_coverage_data_log_10.tsv', sep="\t", index=True)
-# gene_lenth.to_csv(f'{irma_dir}/gene-percentage-length-coverage-data.tsv', sep="\t", index=True)
-# readsdata.to_csv(f'{irma_dir}/assembled-reads-data.tsv', sep="\t", index=True)
+df_coverage.to_csv(f'{irma_dir}/depth_coverage_data.tsv', sep="\t", index=True)
+df_coverage_log.to_csv(f'{irma_dir}/depth_coverage_data_log_10.tsv', sep="\t", index=True)
+gene_lenth.to_csv(f'{irma_dir}/gene-percentage-length-coverage-data.tsv', sep="\t", index=True)
+readsdata.to_csv(f'{irma_dir}/assembled-reads-data.tsv', sep="\t", index=True)
 
 #PLOT FUNCTIONS
 'GnBu','OrRd'
