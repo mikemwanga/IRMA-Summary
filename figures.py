@@ -80,7 +80,7 @@ def plot_assembled_reads(data):
 
 
 # Predefined order of gene names
-gene_order = ['PB2', 'PB1', 'PA', 'HA', 'NP', 'NA', 'MP','NS']
+gene_order = ['PB2', 'PB1', 'PA', 'HA', 'NP', 'NA', 'NS','MP']
 #FUNCTION TO PLOT COVERAGE PLOTS
 def plot_line_coverage_depth(file_data,irma_dir, reference_folder): #file_data is a dictionary where key is foldername, for the data.
     for foldername, cov_data in file_data.items(): #every folder data frame
