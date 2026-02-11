@@ -100,7 +100,7 @@ for folder in selected_folder:
 
     if merged_coverage_data:
         pd.concat(merged_coverage_data).to_csv(
-            f'{ref_folder_path}/{folder}-read-coverage-table.tsv', index=False, sep='\t'
+            f'{summary_dir}/{folder}-read-coverage-table.tsv', index=False, sep='\t'
         )
 
     # EXTRACT SUBTYPE INFORMATION
@@ -267,7 +267,7 @@ def process_data(fullpath):
     return pd.concat(depth_data)
 
 
-gene_coverage_data_all = process_data(ref_folder_path)
+gene_coverage_data_all = process_data(summary_dir)
 
 # EXPORT DATAFRAMES
 print('Output data to files')
@@ -288,7 +288,7 @@ plot_read_distribution(readsdata, 'prop_assembled', 'prop_notassembled', 'Read P
 plot_read_distribution(readsdata, 'total_assembled', 'notassembled', 'Read Frequency')
 
 print('Plotting per-sample depth curves')
-plot_line_coverage_depth(file_data, irma_dir, reference_folder)
+plot_line_coverage_depth(file_data, irma_dir, figures_folder)
 
 print('Plotting figures for coverage by depth logwise')
 plot_figures_log(df_coverage_log)
